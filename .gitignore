@@ -1,0 +1,9 @@
+# CivicMind AI — Dependencies
+node_modules/
+.env
+*.log
+uploads/*
+!uploads/.gitkeep
+dist/
+.DS_Store
+Thumbs.db

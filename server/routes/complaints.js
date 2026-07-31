@@ -130,7 +130,7 @@ router.get('/:id', protect, async (req, res) => {
 });
 
 // PATCH /api/complaints/:id/status — Officer updates status
-router.patch('/:id/status', protect, requireRole('officer', 'admin'),
+router.patch('/:id/status', protect, requireRole('officer', 'admin'), upload.single('image'),
   auditLogger('UPDATE_STATUS', 'Complaint'), async (req, res) => {
     try {
       const { status, note, resolutionNote } = req.body;
@@ -140,6 +140,7 @@ router.patch('/:id/status', protect, requireRole('officer', 'admin'),
       complaint.status = status;
       if (resolutionNote) complaint.resolutionNote = resolutionNote;
       if (status === 'resolved') complaint.resolvedAt = new Date();
+      if (req.file) complaint.resolutionImageUrl = `/uploads/${req.file.filename}`;
       complaint.timeline.push({ status, note: note || `Status updated to ${status}`, by: req.user._id });
       await complaint.save();
       res.json(complaint);

@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
-import { Plus, TrendingUp, Clock, CheckCircle, AlertCircle, Star } from 'lucide-react'
+import { Plus, TrendingUp, Clock, CheckCircle, AlertCircle, Mic } from 'lucide-react'
 import DashboardLayout from '../../components/layout/DashboardLayout'
 import { useAuth } from '../../contexts/AuthContext'
 import api from '../../services/api'
@@ -19,8 +19,10 @@ const CAT_ICONS = { road: '🏗️', water: '💧', electricity: '⚡', garbage:
 
 export default function CitizenDashboard() {
   const { user } = useAuth()
+  const navigate = useNavigate()
   const [complaints, setComplaints] = useState([])
   const [loading, setLoading] = useState(true)
+  const [listening, setListening] = useState(false)
 
   useEffect(() => {
     api.get('/complaints/my').then(r => setComplaints(r.data)).catch(console.error).finally(() => setLoading(false))
@@ -31,6 +33,22 @@ export default function CitizenDashboard() {
     pending: complaints.filter(c => c.status === 'pending').length,
     inProgress: complaints.filter(c => ['assigned', 'in_progress'].includes(c.status)).length,
     resolved: complaints.filter(c => c.status === 'resolved').length,
+  }
+
+  const startVoice = () => {
+    if (!('webkitSpeechRecognition' in window || 'SpeechRecognition' in window)) {
+      return alert('Speech recognition not supported in this browser')
+    }
+    const SR = window.SpeechRecognition || window.webkitSpeechRecognition
+    const recognition = new SR()
+    recognition.lang = 'en-IN'
+    recognition.onstart = () => setListening(true)
+    recognition.onend = () => setListening(false)
+    recognition.onresult = (e) => {
+      const text = e.results[0][0].transcript
+      navigate('/citizen/new', { state: { voiceText: text } })
+    }
+    recognition.start()
   }
 
   return (
@@ -59,12 +77,14 @@ export default function CitizenDashboard() {
       {/* Stats */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
         {[
-          { label: 'Total Filed', value: stats.total, icon: '📋', color: 'text-blue-400' },
-          { label: 'Pending', value: stats.pending, icon: '⏳', color: 'text-yellow-400' },
-          { label: 'In Progress', value: stats.inProgress, icon: '🔄', color: 'text-purple-400' },
-          { label: 'Resolved', value: stats.resolved, icon: '✅', color: 'text-green-400' },
+          { key: 'all', label: 'Total Filed', value: stats.total, icon: '📋', color: 'text-blue-400' },
+          { key: 'pending', label: 'Pending', value: stats.pending, icon: '⏳', color: 'text-yellow-400' },
+          { key: 'in_progress', label: 'In Progress', value: stats.inProgress, icon: '🔄', color: 'text-purple-400' },
+          { key: 'resolved', label: 'Resolved', value: stats.resolved, icon: '✅', color: 'text-green-400' },
         ].map((s, i) => (
-          <motion.div key={i} initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: i * 0.1 }} className="stat-card">
+          <motion.div key={i} initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: i * 0.1 }} 
+            onClick={() => navigate(`/citizen/complaints?status=${s.key}`)}
+            className="stat-card cursor-pointer hover:scale-105 hover:border-cyan-500/30 transition-all hover:shadow-[0_0_15px_rgba(6,182,212,0.2)]">
             <div className="text-2xl">{s.icon}</div>
             <div className={`text-3xl font-black ${s.color}`}>{s.value}</div>
             <div className="text-gray-500 text-sm">{s.label}</div>
@@ -73,8 +93,17 @@ export default function CitizenDashboard() {
       </div>
 
       {/* Quick Actions */}
-      <div className="grid sm:grid-cols-3 gap-4 mb-8">
-        <Link to="/citizen/new" className="card p-5 hover:border-primary/40 transition-all group flex items-center gap-4">
+      <div className="grid sm:grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+        <button onClick={startVoice} className={`cyber-card p-5 hover:border-cyan-500/40 hover:-translate-y-1 hover:shadow-[0_0_20px_rgba(6,182,212,0.3)] transition-all group flex items-center gap-4 cursor-pointer text-left ${listening ? 'border-cyan-500/80 shadow-[0_0_20px_rgba(6,182,212,0.5)]' : ''}`}>
+          <div className={`w-12 h-12 rounded-xl bg-gradient-to-br from-cyan-500 to-blue-600 flex items-center justify-center transition-transform ${listening ? 'animate-pulse scale-110' : 'group-hover:scale-110'}`}>
+            <Mic size={22} className="text-white" />
+          </div>
+          <div>
+            <div className="font-bold glow-text">{listening ? 'Listening...' : 'Voice Report'}</div>
+            <div className="text-gray-400 text-sm">Speak your issue</div>
+          </div>
+        </button>
+        <Link to="/citizen/new" className="cyber-card p-5 hover:border-primary/40 hover:-translate-y-1 hover:shadow-lg hover:shadow-primary/10 transition-all group flex items-center gap-4 cursor-pointer">
           <div className="w-12 h-12 rounded-xl bg-gradient-primary flex items-center justify-center group-hover:scale-110 transition-transform">
             <Plus size={22} className="text-white" />
           </div>
@@ -83,7 +112,7 @@ export default function CitizenDashboard() {
             <div className="text-gray-400 text-sm">AI-powered filing</div>
           </div>
         </Link>
-        <Link to="/citizen/complaints" className="card p-5 hover:border-purple-500/40 transition-all group flex items-center gap-4">
+        <Link to="/citizen/complaints" className="card p-5 hover:border-purple-500/40 hover:-translate-y-1 hover:shadow-lg hover:shadow-purple-500/10 transition-all group flex items-center gap-4 cursor-pointer">
           <div className="w-12 h-12 rounded-xl bg-gradient-to-r from-purple-500 to-pink-500 flex items-center justify-center group-hover:scale-110 transition-transform">
             <TrendingUp size={22} className="text-white" />
           </div>
@@ -92,15 +121,15 @@ export default function CitizenDashboard() {
             <div className="text-gray-400 text-sm">Real-time status</div>
           </div>
         </Link>
-        <div className="card p-5 flex items-center gap-4 opacity-60">
-          <div className="w-12 h-12 rounded-xl bg-gradient-to-r from-orange-500 to-red-500 flex items-center justify-center">
+        <button onClick={() => alert('Emergency SOS triggered. Help is on the way (demo only).')} className="card p-5 hover:border-red-500/40 hover:-translate-y-1 hover:shadow-lg hover:shadow-red-500/20 transition-all group flex items-center gap-4 text-left cursor-pointer">
+          <div className="w-12 h-12 rounded-xl bg-gradient-to-r from-orange-500 to-red-500 flex items-center justify-center group-hover:scale-110 transition-transform">
             <AlertCircle size={22} className="text-white" />
           </div>
           <div>
             <div className="font-bold">Emergency SOS</div>
             <div className="text-gray-400 text-sm">Critical issues</div>
           </div>
-        </div>
+        </button>
       </div>
 
       {/* Recent Complaints */}

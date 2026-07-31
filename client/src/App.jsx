@@ -12,6 +12,7 @@ import MyComplaints from './pages/citizen/MyComplaints'
 import OfficerDashboard from './pages/officer/OfficerDashboard'
 import CommandCenter from './pages/admin/CommandCenter'
 import AIInsights from './pages/admin/AIInsights'
+import AdminComplaints from './pages/admin/AdminComplaints'
 
 const PrivateRoute = ({ children, roles }) => {
   const { user } = useAuth()
@@ -35,6 +36,7 @@ const AppRoutes = () => {
       <Route path="/officer" element={<PrivateRoute roles={['officer']}><OfficerDashboard /></PrivateRoute>} />
 
       <Route path="/admin" element={<PrivateRoute roles={['admin']}><CommandCenter /></PrivateRoute>} />
+      <Route path="/admin/complaints" element={<PrivateRoute roles={['admin']}><AdminComplaints /></PrivateRoute>} />
       <Route path="/admin/insights" element={<PrivateRoute roles={['admin']}><AIInsights /></PrivateRoute>} />
 
       <Route path="*" element={<Navigate to="/" />} />

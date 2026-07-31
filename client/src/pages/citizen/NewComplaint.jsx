@@ -1,5 +1,5 @@
-import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useState, useEffect } from 'react'
+import { useNavigate, useLocation } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import { ArrowLeft, ArrowRight, CheckCircle, MapPin, Upload, Mic, Brain, Send } from 'lucide-react'
 import DashboardLayout from '../../components/layout/DashboardLayout'
@@ -35,6 +35,16 @@ export default function NewComplaint() {
   const [submitting, setSubmitting] = useState(false)
   const [listening, setListening] = useState(false)
   const [preview, setPreview] = useState(null)
+  
+  const { state } = useLocation()
+
+  useEffect(() => {
+    if (state?.voiceText && !form.description) {
+      setForm(f => ({ ...f, description: state.voiceText }))
+      setStep(2)
+      toast.success('Voice complaint captured!')
+    }
+  }, [state])
 
   const handleImageChange = (e) => {
     const file = e.target.files[0]

@@ -37,6 +37,7 @@ const complaintSchema = new mongoose.Schema({
     lng: { type: Number, default: 0 },
   },
   imageUrl: { type: String, default: '' },
+  resolutionImageUrl: { type: String, default: '' },
   department: { type: mongoose.Schema.Types.ObjectId, ref: 'Department' },
   assignedOfficer: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
   citizen: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },

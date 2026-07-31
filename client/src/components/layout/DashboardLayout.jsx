@@ -1,9 +1,10 @@
 import { useState } from 'react'
 import { Link, useNavigate, useLocation } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Brain, LogOut, Menu, X, Bell, ChevronRight } from 'lucide-react'
+import { Brain, LogOut, Menu, X, Bell, ChevronRight, ArrowLeft } from 'lucide-react'
 import { useAuth } from '../../contexts/AuthContext'
 import toast from 'react-hot-toast'
+import ProfileModal from '../ui/ProfileModal'
 
 const NAV_BY_ROLE = {
   citizen: [
@@ -16,6 +17,7 @@ const NAV_BY_ROLE = {
   ],
   admin: [
     { path: '/admin', label: 'Command Center', icon: '🎯' },
+    { path: '/admin/complaints', label: 'Manage Complaints', icon: '📋' },
     { path: '/admin/insights', label: 'AI Insights', icon: '🤖' },
   ],
 }
@@ -28,6 +30,26 @@ export default function DashboardLayout({ children, title }) {
   const navigate = useNavigate()
   const location = useLocation()
   const [sidebarOpen, setSidebarOpen] = useState(false)
+  const [profileModalUser, setProfileModalUser] = useState(null)
+  const [showNotifications, setShowNotifications] = useState(false)
+  
+  const [notifications, setNotifications] = useState([
+    { id: 1, title: 'Status Updated', message: 'A complaint assigned to you has been marked as In Progress.', read: false, time: '10 mins ago' },
+    { id: 2, title: 'System Alert', message: 'Server maintenance scheduled for tonight at 2 AM. Expect brief downtime.', read: false, time: '1 hour ago' },
+    { id: 3, title: 'Welcome!', message: 'Welcome to CivicMind AI. Explore your dashboard to get started.', read: true, time: '2 days ago' }
+  ])
+  const [selectedNotification, setSelectedNotification] = useState(null)
+
+  const unreadCount = notifications.filter(n => !n.read).length
+
+  const handleNotificationClick = (n) => {
+    setNotifications(prev => prev.map(notif => notif.id === n.id ? { ...notif, read: true } : notif))
+    setSelectedNotification(n)
+  }
+
+  const markAllRead = () => {
+    setNotifications(prev => prev.map(n => ({ ...n, read: true })))
+  }
 
   const navItems = NAV_BY_ROLE[user?.role] || []
 
@@ -41,7 +63,7 @@ export default function DashboardLayout({ children, title }) {
     <div className="flex flex-col h-full">
       {/* Logo */}
       <div className="p-6 border-b border-white/5">
-        <Link to="/" className="flex items-center gap-3">
+        <Link to={user ? `/${user.role}` : '/'} className="flex items-center gap-3">
           <div className="w-10 h-10 rounded-xl bg-gradient-primary flex items-center justify-center">
             <Brain size={20} className="text-white" />
           </div>
@@ -53,13 +75,13 @@ export default function DashboardLayout({ children, title }) {
       </div>
 
       {/* User Card */}
-      <div className="p-4 m-4 glass rounded-2xl">
+      <div className="p-4 m-4 cyber-card rounded-2xl cursor-pointer hover:border-cyan-500/50 hover:shadow-[0_0_15px_rgba(6,182,212,0.15)] transition-all group" onClick={() => setProfileModalUser(user)}>
         <div className="flex items-center gap-3">
-          <div className={`w-10 h-10 rounded-xl bg-gradient-to-r ${ROLE_COLORS[user?.role]} flex items-center justify-center text-white font-bold text-sm`}>
+          <div className={`w-10 h-10 rounded-xl bg-gradient-to-r ${ROLE_COLORS[user?.role]} flex items-center justify-center text-white font-bold text-sm group-hover:scale-110 transition-transform`}>
             {user?.name?.charAt(0).toUpperCase()}
           </div>
           <div className="flex-1 min-w-0">
-            <div className="font-semibold text-sm truncate">{user?.name}</div>
+            <div className="font-semibold text-sm truncate group-hover:text-cyan-400 transition-colors">{user?.name}</div>
             <div className="text-gray-400 text-xs">{ROLE_BADGES[user?.role]}</div>
           </div>
         </div>
@@ -126,12 +148,72 @@ export default function DashboardLayout({ children, title }) {
             <Menu size={20} />
           </button>
           <h1 className="font-bold text-lg flex-1">{title}</h1>
-          <div className="flex items-center gap-3">
-            <button className="relative glass p-2 rounded-xl hover:bg-white/10 transition-all">
+          <div className="flex items-center gap-3 relative">
+            <button onClick={() => setShowNotifications(!showNotifications)} className="relative glass p-2 rounded-xl hover:bg-white/10 transition-all">
               <Bell size={18} className="text-gray-400" />
-              <div className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 rounded-full text-xs flex items-center justify-center font-bold">3</div>
+              {unreadCount > 0 && (
+                <div className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 rounded-full text-[10px] flex items-center justify-center font-bold text-white">
+                  {unreadCount}
+                </div>
+              )}
             </button>
-            <div className={`w-8 h-8 rounded-xl bg-gradient-to-r ${ROLE_COLORS[user?.role]} flex items-center justify-center text-white font-bold text-sm`}>
+
+            <AnimatePresence>
+              {showNotifications && (
+                <>
+                  <div className="fixed inset-0 z-40" onClick={() => { setShowNotifications(false); setSelectedNotification(null); }}></div>
+                  <motion.div initial={{ opacity: 0, y: 10, scale: 0.95 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: 10, scale: 0.95 }}
+                    className="absolute top-12 right-0 w-80 cyber-card rounded-2xl shadow-2xl border border-white/10 z-50 overflow-hidden flex flex-col max-h-[400px]">
+                    
+                    {!selectedNotification ? (
+                      <>
+                        <div className="p-4 border-b border-white/10 flex justify-between items-center bg-white/5 flex-shrink-0">
+                          <h3 className="font-bold text-sm">Notifications</h3>
+                          <button onClick={() => setShowNotifications(false)} className="text-gray-400 hover:text-white text-lg leading-none">&times;</button>
+                        </div>
+                        <div className="overflow-y-auto flex-1">
+                          {notifications.length === 0 ? (
+                            <div className="p-8 text-center text-gray-500 text-sm">No notifications</div>
+                          ) : (
+                            notifications.map(n => (
+                              <div key={n.id} onClick={() => handleNotificationClick(n)} className={`p-4 border-b border-white/5 hover:bg-white/5 cursor-pointer transition-colors ${!n.read ? 'bg-primary/5' : ''}`}>
+                                <div className="flex justify-between items-start mb-1">
+                                  <div className={`font-semibold text-sm ${!n.read ? 'text-cyan-400' : 'text-gray-300'}`}>{n.title}</div>
+                                  {!n.read && <div className="w-2 h-2 rounded-full bg-cyan-400 flex-shrink-0 mt-1.5" />}
+                                </div>
+                                <div className="text-xs text-gray-400 truncate">{n.message}</div>
+                                <div className="text-[10px] text-gray-500 mt-2">{n.time}</div>
+                              </div>
+                            ))
+                          )}
+                        </div>
+                        {unreadCount > 0 && (
+                          <div className="p-3 text-center border-t border-white/10 bg-white/5 flex-shrink-0">
+                            <button onClick={markAllRead} className="text-xs text-cyan-400 hover:text-cyan-300 font-medium">Mark all as read</button>
+                          </div>
+                        )}
+                      </>
+                    ) : (
+                      <div className="flex flex-col h-full">
+                        <div className="p-4 border-b border-white/10 flex items-center gap-3 bg-white/5 flex-shrink-0">
+                          <button onClick={() => setSelectedNotification(null)} className="text-gray-400 hover:text-white p-1 hover:bg-white/10 rounded-lg transition-all">
+                            <ArrowLeft size={16} />
+                          </button>
+                          <h3 className="font-bold text-sm flex-1 truncate">{selectedNotification.title}</h3>
+                          <button onClick={() => { setShowNotifications(false); setSelectedNotification(null); }} className="text-gray-400 hover:text-white text-lg leading-none">&times;</button>
+                        </div>
+                        <div className="p-5 overflow-y-auto flex-1">
+                          <div className="text-[10px] text-cyan-400 font-medium uppercase tracking-wider mb-3">{selectedNotification.time}</div>
+                          <p className="text-gray-300 text-sm leading-relaxed">{selectedNotification.message}</p>
+                        </div>
+                      </div>
+                    )}
+                  </motion.div>
+                </>
+              )}
+            </AnimatePresence>
+
+            <div className={`w-8 h-8 rounded-xl bg-gradient-to-r ${ROLE_COLORS[user?.role]} flex items-center justify-center text-white font-bold text-sm cursor-pointer`} onClick={() => setProfileModalUser(user)}>
               {user?.name?.charAt(0).toUpperCase()}
             </div>
           </div>
@@ -142,6 +224,10 @@ export default function DashboardLayout({ children, title }) {
           {children}
         </main>
       </div>
+      
+      <AnimatePresence>
+        {profileModalUser && <ProfileModal user={profileModalUser} onClose={() => setProfileModalUser(null)} />}
+      </AnimatePresence>
     </div>
   )
 }

@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
   AlertTriangle, Brain, CheckCircle, Clock, MapPin, Send,
@@ -40,6 +41,7 @@ const CustomTooltip = ({ active, payload, label }) => {
 }
 
 export default function CommandCenter() {
+  const navigate = useNavigate()
   const [stats, setStats] = useState(null)
   const [heatmap, setHeatmap] = useState([])
   const [feed, setFeed] = useState([])
@@ -110,6 +112,15 @@ export default function CommandCenter() {
     if (feedRef.current) feedRef.current.scrollTop = 0
   }, [feed])
 
+  const handleKpiClick = (key) => {
+    if (key === 'pending') navigate('/admin/complaints?status=pending')
+    else if (key === 'resolved') navigate('/admin/complaints?status=resolved')
+    else if (key === 'critical') navigate('/admin/complaints?priority=critical')
+    else if (key === 'total') navigate('/admin/complaints')
+    else if (key === 'officers') toast.success('Officers view coming soon!')
+    else if (key === 'aiAccuracy') toast.success('AI Diagnostics coming soon!')
+  }
+
   // Build chart data from stats
   const trendData = stats?.last7Days?.map(d => ({ date: d._id?.slice(5), count: d.count })) || []
   const categoryData = stats?.categoryStats?.map(c => ({ name: c._id, value: c.count })) || []
@@ -140,7 +151,8 @@ export default function CommandCenter() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: i * 0.07 }}
-            className="stat-card"
+            onClick={() => handleKpiClick(kpi.key)}
+            className="stat-card cursor-pointer hover:scale-105 hover:border-cyan-500/30 transition-all hover:shadow-[0_0_15px_rgba(6,182,212,0.2)]"
           >
             <div className={`w-10 h-10 rounded-xl bg-gradient-to-r ${kpi.color} flex items-center justify-center mb-2`}>
               <kpi.icon size={18} className="text-white" />

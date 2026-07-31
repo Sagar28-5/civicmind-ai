@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
-import { CheckCircle, Clock, AlertTriangle, MapPin } from 'lucide-react'
+import { CheckCircle, MapPin } from 'lucide-react'
 import DashboardLayout from '../../components/layout/DashboardLayout'
 import api from '../../services/api'
 import toast from 'react-hot-toast'
@@ -24,6 +24,8 @@ export default function OfficerDashboard() {
   const [selected, setSelected] = useState(null)
   const [updating, setUpdating] = useState(false)
   const [note, setNote] = useState('')
+  const [filterPriority, setFilterPriority] = useState('all')
+  const [image, setImage] = useState(null)
 
   const fetch = async () => {
     try {
@@ -40,20 +42,29 @@ export default function OfficerDashboard() {
     if (!next) return
     setUpdating(true)
     try {
-      await api.patch(`/complaints/${complaint._id}/status`, {
-        status: next,
-        note: note || `Status updated to ${next}`,
-        ...(next === 'resolved' && { resolutionNote: note }),
-      })
+      let payload = { status: next, note: note || `Status updated to ${next}` }
+      if (next === 'resolved') payload.resolutionNote = note
+
+      if (image) {
+        const formData = new FormData()
+        Object.entries(payload).forEach(([k, v]) => formData.append(k, v))
+        formData.append('image', image)
+        payload = formData
+      }
+
+      await api.patch(`/complaints/${complaint._id}/status`, payload)
       toast.success(`Complaint marked as ${next}!`)
       setNote('')
+      setImage(null)
       setSelected(null)
       fetch()
     } catch { toast.error('Update failed') }
     finally { setUpdating(false) }
   }
 
-  const byStatus = (status) => complaints.filter(c => c.status === status)
+  const byStatus = (status) => complaints.filter(c => 
+    c.status === status && (filterPriority === 'all' || c.priority === filterPriority)
+  )
 
   const stats = {
     total: complaints.length,
@@ -79,6 +90,17 @@ export default function OfficerDashboard() {
         </div>
       </div>
 
+      <div className="flex justify-end mb-4">
+        <select value={filterPriority} onChange={e => setFilterPriority(e.target.value)}
+          className="bg-white/5 border border-white/10 rounded-xl px-4 py-2 text-sm text-white focus:border-primary focus:outline-none">
+          <option value="all">All Priorities</option>
+          <option value="critical">Critical</option>
+          <option value="high">High</option>
+          <option value="medium">Medium</option>
+          <option value="low">Low</option>
+        </select>
+      </div>
+
       {loading ? (
         <div className="text-center text-gray-500 py-20">Loading tasks...</div>
       ) : (
@@ -97,7 +119,8 @@ export default function OfficerDashboard() {
                 {byStatus(col.id).map((c, i) => (
                   <motion.div key={c._id} initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: i * 0.05 }}
                     onClick={() => setSelected(c)}
-                    className={`glass rounded-xl p-3 cursor-pointer hover:bg-white/10 transition-all ${selected?._id === c._id ? 'border border-primary/50' : ''}`}>
+                    className={`glass rounded-xl p-3 cursor-pointer hover:bg-white/10 hover:-translate-y-1 hover:shadow-lg transition-all ${selected?._id === c._id ? 'border-primary bg-primary/10' : ''}`}>
+
                     <div className="flex items-center gap-2 mb-2">
                       <span className="text-xl">{CAT_ICONS[c.category]}</span>
                       <span className={`badge badge-${c.priority} text-xs`}>{c.priority}</span>
@@ -135,14 +158,29 @@ export default function OfficerDashboard() {
                 <span className="text-blue-400 font-semibold">AI: </span>{selected.aiSummary}
               </div>
             )}
+            {selected.imageUrl && (
+              <div className="mb-4">
+                <div className="text-xs text-gray-500 mb-2">Attached Image</div>
+                <img src={selected.imageUrl} alt="Complaint Attachment" className="w-full max-h-64 object-cover rounded-xl border border-white/10" />
+              </div>
+            )}
             {NEXT_STATUS[selected.status] && (
-              <div className="flex gap-3">
-                <input value={note} onChange={e => setNote(e.target.value)} placeholder="Add a note (optional)..."
-                  className="flex-1 bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-primary" />
-                <button onClick={() => updateStatus(selected)} disabled={updating}
-                  className="btn-primary flex items-center gap-2 whitespace-nowrap">
-                  <CheckCircle size={16} /> {NEXT_LABELS[selected.status]}
-                </button>
+              <div className="space-y-4">
+                {NEXT_STATUS[selected.status] === 'resolved' && (
+                  <div>
+                    <label className="block text-sm text-gray-400 mb-2">Upload Resolution Photo (Optional)</label>
+                    <input type="file" onChange={e => setImage(e.target.files[0])} accept="image/*" 
+                      className="text-sm text-gray-300 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-sm file:font-semibold file:bg-primary file:text-white hover:file:bg-blue-600" />
+                  </div>
+                )}
+                <div className="flex gap-3">
+                  <input value={note} onChange={e => setNote(e.target.value)} placeholder="Add a note (optional)..."
+                    className="flex-1 bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-primary" />
+                  <button onClick={() => updateStatus(selected)} disabled={updating}
+                    className="btn-primary flex items-center gap-2 whitespace-nowrap">
+                    <CheckCircle size={16} /> {updating ? 'Updating...' : NEXT_LABELS[selected.status]}
+                  </button>
+                </div>
               </div>
             )}
           </div>

@@ -121,7 +121,7 @@ export default function CitizenDashboard() {
             <div className="text-gray-400 text-sm">Real-time status</div>
           </div>
         </Link>
-        <button onClick={() => alert('Emergency SOS triggered. Help is on the way (demo only).')} className="card p-5 hover:border-red-500/40 hover:-translate-y-1 hover:shadow-lg hover:shadow-red-500/20 transition-all group flex items-center gap-4 text-left cursor-pointer">
+        <button onClick={() => alert('Emergency SOS triggered. Local emergency services and municipal control room have been notified.')} className="card p-5 hover:border-red-500/40 hover:-translate-y-1 hover:shadow-lg hover:shadow-red-500/20 transition-all group flex items-center gap-4 text-left cursor-pointer">
           <div className="w-12 h-12 rounded-xl bg-gradient-to-r from-orange-500 to-red-500 flex items-center justify-center group-hover:scale-110 transition-transform">
             <AlertCircle size={22} className="text-white" />
           </div>

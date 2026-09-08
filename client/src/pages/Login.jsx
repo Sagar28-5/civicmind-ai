@@ -5,12 +5,6 @@ import { Brain, Mail, Lock, Eye, EyeOff, ArrowRight } from 'lucide-react'
 import { useAuth } from '../contexts/AuthContext'
 import toast from 'react-hot-toast'
 
-const DEMO_ACCOUNTS = [
-  { label: '👤 Citizen Demo', email: 'citizen@demo.com' },
-  { label: '👮 Officer Demo', email: 'officer@demo.com' },
-  { label: '⚙️ Admin Demo', email: 'admin@demo.com' },
-]
-
 export default function Login() {
   const [form, setForm] = useState({ email: '', password: '' })
   const [showPass, setShowPass] = useState(false)
@@ -27,8 +21,6 @@ export default function Login() {
       toast.error(err.response?.data?.message || 'Login failed')
     }
   }
-
-  const quickLogin = (email) => setForm({ email, password: 'Demo@123' })
 
   return (
     <div className="min-h-screen hero-bg flex">
@@ -74,31 +66,9 @@ export default function Login() {
                 <Brain size={20} className="text-white" />
               </div>
               <div>
-                <div className="font-bold text-lg">Welcome Back</div>
+                <div className="font-bold text-lg text-white">Welcome Back</div>
                 <div className="text-gray-400 text-sm">Sign in to CivicMind AI</div>
               </div>
-            </div>
-
-            {/* Quick Demo Buttons */}
-            <div className="mb-6">
-              <div className="text-xs text-gray-500 mb-2 uppercase tracking-wide font-medium">Quick Demo Access</div>
-              <div className="grid grid-cols-3 gap-2">
-                {DEMO_ACCOUNTS.map((a) => (
-                  <button
-                    key={a.email}
-                    onClick={() => quickLogin(a.email)}
-                    className="text-xs glass hover:bg-white/10 px-2 py-2 rounded-lg transition-all text-gray-300 hover:text-white"
-                  >
-                    {a.label}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            <div className="flex items-center gap-3 mb-6">
-              <div className="flex-1 h-px bg-white/10" />
-              <span className="text-xs text-gray-500">or login manually</span>
-              <div className="flex-1 h-px bg-white/10" />
             </div>
 
             <form onSubmit={handleSubmit} className="space-y-4">

@@ -93,7 +93,7 @@ export default function Landing() {
                 Report a Complaint <ArrowRight size={18} />
               </Link>
               <Link to="/login" className="btn-secondary flex items-center gap-2 justify-center text-base">
-                Admin Demo <Cpu size={18} />
+                Sign In <Cpu size={18} />
               </Link>
             </motion.div>
           </motion.div>

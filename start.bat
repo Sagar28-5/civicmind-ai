@@ -29,10 +29,7 @@ echo.
 echo  Frontend : http://localhost:5173
 echo  Backend  : http://localhost:5000/api/health
 echo.
-echo  Demo Logins:
-echo   admin@demo.com   /  Demo@123  (Admin)
-echo   officer@demo.com /  Demo@123  (Officer)
-echo   citizen@demo.com /  Demo@123  (Citizen)
+echo  Log in with your registered production credentials or register a new citizen account.
 echo.
 pause
 

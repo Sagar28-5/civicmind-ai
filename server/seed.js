@@ -66,10 +66,12 @@ const seed = async () => {
     console.log('👤  Creating users...');
     const passwordHash = await bcrypt.hash('Demo@123', 12);
 
+    const adminPasswordHash = await bcrypt.hash('Admin@123', 12);
+
     const [citizen, officer, admin] = await User.insertMany([
       { name: 'Arjun Mehta', email: 'citizen@demo.com', passwordHash, role: 'citizen', phone: '9876543210', location: 'Bengaluru', rewardPoints: 340, badge: 'Community Hero' },
       { name: 'Priya Sharma', email: 'officer@demo.com', passwordHash, role: 'officer', department: depts[0]._id, phone: '9876543211', location: 'Bengaluru', badge: 'Top Officer' },
-      { name: 'Admin Kaila', email: 'admin@demo.com', passwordHash, role: 'admin', phone: '9876543212', location: 'Bengaluru', badge: 'System Admin' },
+      { name: 'System Admin', email: 'kailas87095@gmail.com', passwordHash: adminPasswordHash, role: 'admin', phone: '9876543212', location: 'Bengaluru', badge: 'System Admin' },
     ]);
 
     // Create more officers

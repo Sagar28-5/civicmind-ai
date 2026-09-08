@@ -44,7 +44,11 @@ io.on('connection', (socket) => {
   });
 });
 
-connectDB();
+const initAdminUser = require('./utils/initAdmin');
+
+connectDB().then(() => {
+  initAdminUser();
+}).catch(console.error);
 
 // ─── Security & Middleware ────────────────────────────────────────────────────
 app.use(helmet({ crossOriginResourcePolicy: { policy: 'cross-origin' } }));

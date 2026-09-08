@@ -1,55 +1,45 @@
 import { useState } from 'react'
 import { Link, useNavigate, useLocation } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Brain, LogOut, Menu, X, Bell, ChevronRight, ArrowLeft } from 'lucide-react'
+import { Brain, LogOut, Menu, X, Bell, ChevronRight, Sun, Moon, Globe } from 'lucide-react'
 import { useAuth } from '../../contexts/AuthContext'
+import { useTheme } from '../../contexts/ThemeContext'
+import { useLanguage } from '../../contexts/LanguageContext'
+import { useSocket } from '../../contexts/SocketContext'
 import toast from 'react-hot-toast'
 import ProfileModal from '../ui/ProfileModal'
+import NotificationPanel from '../ui/NotificationPanel'
 
 const NAV_BY_ROLE = {
   citizen: [
-    { path: '/citizen', label: 'Dashboard', icon: '🏠' },
-    { path: '/citizen/new', label: 'New Complaint', icon: '📝' },
-    { path: '/citizen/complaints', label: 'My Complaints', icon: '📋' },
+    { path: '/citizen', labelKey: 'dashboard', icon: '🏠' },
+    { path: '/citizen/new', labelKey: 'newComplaint', icon: '📝' },
+    { path: '/citizen/complaints', labelKey: 'myComplaints', icon: '📋' },
   ],
   officer: [
-    { path: '/officer', label: 'My Tasks', icon: '📋' },
+    { path: '/officer', labelKey: 'assignedComplaints', icon: '📋' },
   ],
   admin: [
-    { path: '/admin', label: 'Command Center', icon: '🎯' },
-    { path: '/admin/complaints', label: 'Manage Complaints', icon: '📋' },
-    { path: '/admin/insights', label: 'AI Insights', icon: '🤖' },
+    { path: '/admin', labelKey: 'commandCenter', icon: '🎯' },
+    { path: '/admin/complaints', labelKey: 'myComplaints', icon: '📋' },
+    { path: '/admin/insights', labelKey: 'analytics', icon: '🤖' },
   ],
 }
 
-const ROLE_COLORS = { citizen: 'from-green-500 to-teal-500', officer: 'from-blue-500 to-cyan-500', admin: 'from-purple-500 to-pink-500' }
+const ROLE_COLORS = { citizen: 'from-emerald-500 to-teal-500', officer: 'from-blue-500 to-indigo-500', admin: 'from-purple-500 to-pink-500' }
 const ROLE_BADGES = { citizen: '👤 Citizen', officer: '👮 Officer', admin: '⚙️ Admin' }
 
 export default function DashboardLayout({ children, title }) {
   const { user, logout } = useAuth()
+  const { theme, toggleTheme, isDark } = useTheme()
+  const { lang, setLang, t } = useLanguage()
+  const { unreadCount } = useSocket()
+  
   const navigate = useNavigate()
   const location = useLocation()
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [profileModalUser, setProfileModalUser] = useState(null)
-  const [showNotifications, setShowNotifications] = useState(false)
-  
-  const [notifications, setNotifications] = useState([
-    { id: 1, title: 'Status Updated', message: 'A complaint assigned to you has been marked as In Progress.', read: false, time: '10 mins ago' },
-    { id: 2, title: 'System Alert', message: 'Server maintenance scheduled for tonight at 2 AM. Expect brief downtime.', read: false, time: '1 hour ago' },
-    { id: 3, title: 'Welcome!', message: 'Welcome to CivicMind AI. Explore your dashboard to get started.', read: true, time: '2 days ago' }
-  ])
-  const [selectedNotification, setSelectedNotification] = useState(null)
-
-  const unreadCount = notifications.filter(n => !n.read).length
-
-  const handleNotificationClick = (n) => {
-    setNotifications(prev => prev.map(notif => notif.id === n.id ? { ...notif, read: true } : notif))
-    setSelectedNotification(n)
-  }
-
-  const markAllRead = () => {
-    setNotifications(prev => prev.map(n => ({ ...n, read: true })))
-  }
+  const [isNotifOpen, setIsNotifOpen] = useState(false)
 
   const navItems = NAV_BY_ROLE[user?.role] || []
 
@@ -60,35 +50,38 @@ export default function DashboardLayout({ children, title }) {
   }
 
   const Sidebar = () => (
-    <div className="flex flex-col h-full">
+    <div className="flex flex-col h-full bg-slate-900 text-white dark:bg-slate-950">
       {/* Logo */}
-      <div className="p-6 border-b border-white/5">
+      <div className="p-6 border-b border-slate-800">
         <Link to={user ? `/${user.role}` : '/'} className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-gradient-primary flex items-center justify-center">
-            <Brain size={20} className="text-white" />
+          <div className="w-10 h-10 rounded-xl bg-gradient-to-r from-indigo-500 to-cyan-500 flex items-center justify-center shadow-lg shadow-indigo-500/20">
+            <Brain size={22} className="text-white" />
           </div>
           <div>
-            <div className="font-bold text-sm">CivicMind AI</div>
-            <div className="text-gray-500 text-xs">Smart Governance</div>
+            <div className="font-bold text-base tracking-tight">{t('appTitle')}</div>
+            <div className="text-slate-400 text-xs font-medium">Smart Governance</div>
           </div>
         </Link>
       </div>
 
       {/* User Card */}
-      <div className="p-4 m-4 cyber-card rounded-2xl cursor-pointer hover:border-cyan-500/50 hover:shadow-[0_0_15px_rgba(6,182,212,0.15)] transition-all group" onClick={() => setProfileModalUser(user)}>
+      <div
+        className="p-4 m-4 bg-slate-800/60 dark:bg-slate-900/60 border border-slate-700/50 rounded-2xl cursor-pointer hover:border-indigo-500/50 transition-all group"
+        onClick={() => setProfileModalUser(user)}
+      >
         <div className="flex items-center gap-3">
-          <div className={`w-10 h-10 rounded-xl bg-gradient-to-r ${ROLE_COLORS[user?.role]} flex items-center justify-center text-white font-bold text-sm group-hover:scale-110 transition-transform`}>
+          <div className={`w-10 h-10 rounded-xl bg-gradient-to-r ${ROLE_COLORS[user?.role]} flex items-center justify-center text-white font-bold text-sm shadow-md group-hover:scale-105 transition-transform`}>
             {user?.name?.charAt(0).toUpperCase()}
           </div>
           <div className="flex-1 min-w-0">
-            <div className="font-semibold text-sm truncate group-hover:text-cyan-400 transition-colors">{user?.name}</div>
-            <div className="text-gray-400 text-xs">{ROLE_BADGES[user?.role]}</div>
+            <div className="font-semibold text-sm truncate group-hover:text-indigo-400 transition-colors">{user?.name}</div>
+            <div className="text-slate-400 text-xs">{ROLE_BADGES[user?.role]}</div>
           </div>
         </div>
       </div>
 
       {/* Nav */}
-      <nav className="flex-1 px-4 space-y-1">
+      <nav className="flex-1 px-4 space-y-1.5">
         {navItems.map((item) => {
           const active = location.pathname === item.path
           return (
@@ -96,19 +89,23 @@ export default function DashboardLayout({ children, title }) {
               key={item.path}
               to={item.path}
               onClick={() => setSidebarOpen(false)}
-              className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${active ? 'bg-primary/20 text-primary border border-primary/30' : 'text-gray-400 hover:text-white hover:bg-white/5'}`}
+              className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${
+                active
+                  ? 'bg-indigo-600 text-white font-semibold shadow-lg shadow-indigo-600/30'
+                  : 'text-slate-400 hover:text-white hover:bg-slate-800/50'
+              }`}
             >
               <span className="text-lg">{item.icon}</span>
-              <span className="font-medium text-sm">{item.label}</span>
-              {active && <ChevronRight size={14} className="ml-auto" />}
+              <span className="text-sm">{t(item.labelKey)}</span>
+              {active && <ChevronRight size={16} className="ml-auto opacity-70" />}
             </Link>
           )
         })}
       </nav>
 
       {/* Logout */}
-      <div className="p-4">
-        <button onClick={handleLogout} className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-gray-400 hover:text-red-400 hover:bg-red-500/10 transition-all">
+      <div className="p-4 border-t border-slate-800">
+        <button onClick={handleLogout} className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-slate-400 hover:text-rose-400 hover:bg-rose-500/10 transition-all">
           <LogOut size={18} />
           <span className="font-medium text-sm">Logout</span>
         </button>
@@ -117,9 +114,9 @@ export default function DashboardLayout({ children, title }) {
   )
 
   return (
-    <div className="flex h-screen bg-navy overflow-hidden">
+    <div className="flex h-screen bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 overflow-hidden transition-colors duration-200">
       {/* Desktop Sidebar */}
-      <aside className="hidden lg:flex flex-col w-64 bg-card border-r border-white/5 flex-shrink-0">
+      <aside className="hidden lg:flex flex-col w-64 border-r border-slate-200 dark:border-slate-800 flex-shrink-0">
         <Sidebar />
       </aside>
 
@@ -128,12 +125,9 @@ export default function DashboardLayout({ children, title }) {
         {sidebarOpen && (
           <>
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-              className="fixed inset-0 bg-black/60 z-40 lg:hidden" onClick={() => setSidebarOpen(false)} />
-            <motion.aside initial={{ x: -280 }} animate={{ x: 0 }} exit={{ x: -280 }} transition={{ type: 'spring', damping: 20 }}
-              className="fixed left-0 top-0 h-full w-64 bg-card z-50 lg:hidden">
-              <div className="p-4 flex justify-end">
-                <button onClick={() => setSidebarOpen(false)} className="text-gray-400 hover:text-white"><X size={20} /></button>
-              </div>
+              className="fixed inset-0 bg-black/60 z-40 lg:hidden backdrop-blur-xs" onClick={() => setSidebarOpen(false)} />
+            <motion.aside initial={{ x: -280 }} animate={{ x: 0 }} exit={{ x: -280 }} transition={{ type: 'spring', damping: 22 }}
+              className="fixed left-0 top-0 h-full w-64 z-50 lg:hidden">
               <Sidebar />
             </motion.aside>
           </>
@@ -143,91 +137,72 @@ export default function DashboardLayout({ children, title }) {
       {/* Main */}
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
         {/* Topbar */}
-        <header className="h-16 border-b border-white/5 bg-card/50 backdrop-blur flex items-center px-6 gap-4 flex-shrink-0">
-          <button onClick={() => setSidebarOpen(true)} className="lg:hidden text-gray-400 hover:text-white">
+        <header className="h-16 border-b border-slate-200 dark:border-slate-800 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md flex items-center px-6 gap-4 flex-shrink-0 z-10 transition-colors">
+          <button onClick={() => setSidebarOpen(true)} className="lg:hidden text-slate-500 hover:text-slate-900 dark:hover:text-white">
             <Menu size={20} />
           </button>
-          <h1 className="font-bold text-lg flex-1">{title}</h1>
-          <div className="flex items-center gap-3 relative">
-            <button onClick={() => setShowNotifications(!showNotifications)} className="relative glass p-2 rounded-xl hover:bg-white/10 transition-all">
-              <Bell size={18} className="text-gray-400" />
+          
+          <h1 className="font-bold text-lg text-slate-900 dark:text-white flex-1 truncate">{title}</h1>
+          
+          <div className="flex items-center gap-3">
+            {/* Language Selector Dropdown */}
+            <div className="relative flex items-center bg-slate-100 dark:bg-slate-800/80 rounded-xl px-2.5 py-1 border border-slate-200 dark:border-slate-700/60">
+              <Globe size={15} className="text-slate-500 dark:text-slate-400 mr-1.5" />
+              <select
+                value={lang}
+                onChange={(e) => setLang(e.target.value)}
+                className="bg-transparent text-xs font-semibold text-slate-800 dark:text-slate-200 focus:outline-none cursor-pointer"
+              >
+                <option value="en" className="bg-white dark:bg-slate-900 text-slate-900 dark:text-white">EN (English)</option>
+                <option value="hi" className="bg-white dark:bg-slate-900 text-slate-900 dark:text-white">HI (हिंदी)</option>
+                <option value="mr" className="bg-white dark:bg-slate-900 text-slate-900 dark:text-white">MR (मराठी)</option>
+              </select>
+            </div>
+
+            {/* Dark/Light Theme Switcher Button */}
+            <button
+              onClick={toggleTheme}
+              title={`Switch to ${isDark ? 'Light' : 'Dark'} mode`}
+              className="p-2.5 rounded-xl bg-slate-100 dark:bg-slate-800/80 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700/60 transition"
+            >
+              {isDark ? <Sun size={18} className="text-amber-400" /> : <Moon size={18} className="text-indigo-600" />}
+            </button>
+
+            {/* Notifications Button */}
+            <button
+              onClick={() => setIsNotifOpen(true)}
+              className="relative p-2.5 rounded-xl bg-slate-100 dark:bg-slate-800/80 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700/60 transition"
+            >
+              <Bell size={18} />
               {unreadCount > 0 && (
-                <div className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 rounded-full text-[10px] flex items-center justify-center font-bold text-white">
+                <span className="absolute -top-1 -right-1 w-4 h-4 bg-rose-500 rounded-full text-[10px] flex items-center justify-center font-bold text-white shadow-sm">
                   {unreadCount}
-                </div>
+                </span>
               )}
             </button>
 
-            <AnimatePresence>
-              {showNotifications && (
-                <>
-                  <div className="fixed inset-0 z-40" onClick={() => { setShowNotifications(false); setSelectedNotification(null); }}></div>
-                  <motion.div initial={{ opacity: 0, y: 10, scale: 0.95 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: 10, scale: 0.95 }}
-                    className="absolute top-12 right-0 w-80 cyber-card rounded-2xl shadow-2xl border border-white/10 z-50 overflow-hidden flex flex-col max-h-[400px]">
-                    
-                    {!selectedNotification ? (
-                      <>
-                        <div className="p-4 border-b border-white/10 flex justify-between items-center bg-white/5 flex-shrink-0">
-                          <h3 className="font-bold text-sm">Notifications</h3>
-                          <button onClick={() => setShowNotifications(false)} className="text-gray-400 hover:text-white text-lg leading-none">&times;</button>
-                        </div>
-                        <div className="overflow-y-auto flex-1">
-                          {notifications.length === 0 ? (
-                            <div className="p-8 text-center text-gray-500 text-sm">No notifications</div>
-                          ) : (
-                            notifications.map(n => (
-                              <div key={n.id} onClick={() => handleNotificationClick(n)} className={`p-4 border-b border-white/5 hover:bg-white/5 cursor-pointer transition-colors ${!n.read ? 'bg-primary/5' : ''}`}>
-                                <div className="flex justify-between items-start mb-1">
-                                  <div className={`font-semibold text-sm ${!n.read ? 'text-cyan-400' : 'text-gray-300'}`}>{n.title}</div>
-                                  {!n.read && <div className="w-2 h-2 rounded-full bg-cyan-400 flex-shrink-0 mt-1.5" />}
-                                </div>
-                                <div className="text-xs text-gray-400 truncate">{n.message}</div>
-                                <div className="text-[10px] text-gray-500 mt-2">{n.time}</div>
-                              </div>
-                            ))
-                          )}
-                        </div>
-                        {unreadCount > 0 && (
-                          <div className="p-3 text-center border-t border-white/10 bg-white/5 flex-shrink-0">
-                            <button onClick={markAllRead} className="text-xs text-cyan-400 hover:text-cyan-300 font-medium">Mark all as read</button>
-                          </div>
-                        )}
-                      </>
-                    ) : (
-                      <div className="flex flex-col h-full">
-                        <div className="p-4 border-b border-white/10 flex items-center gap-3 bg-white/5 flex-shrink-0">
-                          <button onClick={() => setSelectedNotification(null)} className="text-gray-400 hover:text-white p-1 hover:bg-white/10 rounded-lg transition-all">
-                            <ArrowLeft size={16} />
-                          </button>
-                          <h3 className="font-bold text-sm flex-1 truncate">{selectedNotification.title}</h3>
-                          <button onClick={() => { setShowNotifications(false); setSelectedNotification(null); }} className="text-gray-400 hover:text-white text-lg leading-none">&times;</button>
-                        </div>
-                        <div className="p-5 overflow-y-auto flex-1">
-                          <div className="text-[10px] text-cyan-400 font-medium uppercase tracking-wider mb-3">{selectedNotification.time}</div>
-                          <p className="text-gray-300 text-sm leading-relaxed">{selectedNotification.message}</p>
-                        </div>
-                      </div>
-                    )}
-                  </motion.div>
-                </>
-              )}
-            </AnimatePresence>
-
-            <div className={`w-8 h-8 rounded-xl bg-gradient-to-r ${ROLE_COLORS[user?.role]} flex items-center justify-center text-white font-bold text-sm cursor-pointer`} onClick={() => setProfileModalUser(user)}>
+            {/* User Avatar */}
+            <div
+              className={`w-9 h-9 rounded-xl bg-gradient-to-r ${ROLE_COLORS[user?.role]} flex items-center justify-center text-white font-bold text-sm cursor-pointer shadow-md`}
+              onClick={() => setProfileModalUser(user)}
+            >
               {user?.name?.charAt(0).toUpperCase()}
             </div>
           </div>
         </header>
 
         {/* Content */}
-        <main className="flex-1 overflow-y-auto p-6">
+        <main className="flex-1 overflow-y-auto p-4 sm:p-6 bg-slate-50 dark:bg-slate-950">
           {children}
         </main>
       </div>
-      
+
+      <NotificationPanel isOpen={isNotifOpen} onClose={() => setIsNotifOpen(false)} />
+
       <AnimatePresence>
         {profileModalUser && <ProfileModal user={profileModalUser} onClose={() => setProfileModalUser(null)} />}
       </AnimatePresence>
     </div>
   )
 }
+

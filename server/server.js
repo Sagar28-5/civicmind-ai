@@ -7,7 +7,43 @@ const path = require('path');
 const connectDB = require('./config/db');
 const { apiLimiter } = require('./middleware/rateLimiter');
 
+const http = require('http');
+const { Server } = require('socket.io');
+
 const app = express();
+const server = http.createServer(app);
+const io = new Server(server, {
+  cors: {
+    origin: process.env.CLIENT_URL || '*',
+    methods: ['GET', 'POST', 'PATCH', 'DELETE'],
+    credentials: true,
+  },
+});
+
+app.set('io', io);
+
+io.on('connection', (socket) => {
+  console.log('⚡ Socket connected:', socket.id);
+
+  socket.on('join_user', (userId) => {
+    if (userId) {
+      socket.join(`user:${userId}`);
+      console.log(`User ${userId} joined personal socket room`);
+    }
+  });
+
+  socket.on('join_role', (role) => {
+    if (role) {
+      socket.join(`role:${role}`);
+      console.log(`Socket ${socket.id} joined role room: role:${role}`);
+    }
+  });
+
+  socket.on('disconnect', () => {
+    console.log('🔌 Socket disconnected:', socket.id);
+  });
+});
+
 connectDB();
 
 // ─── Security & Middleware ────────────────────────────────────────────────────
@@ -32,11 +68,7 @@ app.get('/api/health', (req, res) => res.json({ status: 'CivicMind AI Server is 
 
 // ─── Production Frontend Serving ──────────────────────────────────────────────
 if (process.env.NODE_ENV === 'production') {
-  // Serve static files from the React app
   app.use(express.static(path.join(__dirname, '../client/dist')));
-
-  // The "catchall" handler: for any request that doesn't match an api route, 
-  // send back React's index.html file.
   app.get('*', (req, res) => {
     res.sendFile(path.join(__dirname, '../client/dist/index.html'));
   });
@@ -49,4 +81,5 @@ app.use((err, req, res, next) => {
 });
 
 const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => console.log(`🚀 CivicMind AI Server running on port ${PORT}`));
+server.listen(PORT, () => console.log(`🚀 CivicMind AI Real-time Server running on port ${PORT}`));
+

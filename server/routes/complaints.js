@@ -6,6 +6,8 @@ const Department = require('../models/Department');
 const { protect, requireRole } = require('../middleware/auth');
 const auditLogger = require('../middleware/auditLogger');
 
+const { analyzeAuthenticity, verifyResolutionProof } = require('../utils/gemini');
+
 const router = express.Router();
 
 // ─── Multer config ────────────────────────────────────────────────────────────
@@ -39,6 +41,9 @@ router.post('/', protect, requireRole('citizen', 'admin'), upload.single('image'
 
       const imageUrl = req.file ? `/uploads/${req.file.filename}` : '';
 
+      // Run AI Fake vs Genuine Detection
+      const authResult = await analyzeAuthenticity(description || title);
+
       const complaint = await Complaint.create({
         title: suggestedTitle || title,
         description,
@@ -51,6 +56,9 @@ router.post('/', protect, requireRole('citizen', 'admin'), upload.single('image'
         sentimentScore,
         location: { address, lat: parseFloat(lat) || 0, lng: parseFloat(lng) || 0 },
         imageUrl,
+        authenticityScore: authResult.authenticityScore,
+        isFakeFlagged: authResult.isFakeFlagged,
+        authenticityReason: authResult.reason,
         department: dept?._id,
         citizen: req.user._id,
         estimatedResolutionDays: estimatedResolutionDays || 3,
@@ -58,6 +66,13 @@ router.post('/', protect, requireRole('citizen', 'admin'), upload.single('image'
       });
 
       const populated = await complaint.populate(['department', 'citizen']);
+
+      // Socket.io event broadcast
+      const io = req.app.get('io');
+      if (io) {
+        io.to('role:admin').to('role:officer').emit('new_complaint', populated);
+      }
+
       res.status(201).json(populated);
     } catch (err) {
       res.status(500).json({ message: err.message });
@@ -129,7 +144,7 @@ router.get('/:id', protect, async (req, res) => {
   }
 });
 
-// PATCH /api/complaints/:id/status — Officer updates status
+// PATCH /api/complaints/:id/status — Officer updates status & uploads resolution photo proof
 router.patch('/:id/status', protect, requireRole('officer', 'admin'), upload.single('image'),
   auditLogger('UPDATE_STATUS', 'Complaint'), async (req, res) => {
     try {
@@ -140,15 +155,64 @@ router.patch('/:id/status', protect, requireRole('officer', 'admin'), upload.sin
       complaint.status = status;
       if (resolutionNote) complaint.resolutionNote = resolutionNote;
       if (status === 'resolved') complaint.resolvedAt = new Date();
-      if (req.file) complaint.resolutionImageUrl = `/uploads/${req.file.filename}`;
+      if (req.file) {
+        complaint.resolutionImageUrl = `/uploads/${req.file.filename}`;
+      }
+
+      // If officer uploads resolution photo or resolves, verify resolution with AI
+      if (req.file || status === 'resolved') {
+        const verif = await verifyResolutionProof(complaint.description, resolutionNote || note || 'Resolved');
+        complaint.resolutionVerificationScore = verif.verificationScore;
+        complaint.resolutionVerificationNotes = verif.notes;
+      }
+
       complaint.timeline.push({ status, note: note || `Status updated to ${status}`, by: req.user._id });
       await complaint.save();
-      res.json(complaint);
+
+      const populated = await Complaint.findById(complaint._id)
+        .populate('department')
+        .populate('citizen', 'name email')
+        .populate('assignedOfficer', 'name email');
+
+      // Socket.io real-time update emission
+      const io = req.app.get('io');
+      if (io) {
+        io.to(`user:${complaint.citizen._id || complaint.citizen}`).emit('complaint_updated', populated);
+        io.to('role:admin').to('role:officer').emit('complaint_updated', populated);
+      }
+
+      res.json(populated);
     } catch (err) {
       res.status(500).json({ message: err.message });
     }
   }
 );
+
+// POST /api/complaints/:id/upvote — Community upvote
+router.post('/:id/upvote', protect, requireRole('citizen'), async (req, res) => {
+  try {
+    const complaint = await Complaint.findById(req.params.id);
+    if (!complaint) return res.status(404).json({ message: 'Complaint not found' });
+
+    const userIdStr = req.user._id.toString();
+    const existingIndex = complaint.upvotes.findIndex(id => id.toString() === userIdStr);
+
+    if (existingIndex > -1) {
+      complaint.upvotes.splice(existingIndex, 1);
+    } else {
+      complaint.upvotes.push(req.user._id);
+    }
+
+    complaint.upvoteCount = complaint.upvotes.length;
+    // Boost priority score slightly with community upvotes
+    complaint.priorityScore = Math.min(100, complaint.priorityScore + (existingIndex > -1 ? -2 : 3));
+    await complaint.save();
+
+    res.json({ upvoteCount: complaint.upvoteCount, priorityScore: complaint.priorityScore, isUpvoted: existingIndex === -1 });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
 
 // PATCH /api/complaints/:id/assign — Admin assigns officer
 router.patch('/:id/assign', protect, requireRole('admin'),
@@ -164,6 +228,13 @@ router.patch('/:id/assign', protect, requireRole('admin'),
         },
         { new: true }
       ).populate(['department', 'assignedOfficer', 'citizen']);
+
+      const io = req.app.get('io');
+      if (io && complaint) {
+        io.to(`user:${complaint.citizen._id || complaint.citizen}`).emit('complaint_updated', complaint);
+        io.to(`user:${officerId}`).emit('complaint_assigned', complaint);
+      }
+
       res.json(complaint);
     } catch (err) {
       res.status(500).json({ message: err.message });
@@ -172,3 +243,4 @@ router.patch('/:id/assign', protect, requireRole('admin'),
 );
 
 module.exports = router;
+

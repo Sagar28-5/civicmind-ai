@@ -1,0 +1,160 @@
+import React, { createContext, useContext, useState, useEffect } from 'react';
+
+const translations = {
+  en: {
+    appTitle: 'CivicMind AI',
+    dashboard: 'Dashboard',
+    myComplaints: 'My Complaints',
+    newComplaint: 'Report Issue',
+    analytics: 'Analytics',
+    commandCenter: 'Command Center',
+    officerPortal: 'Officer Portal',
+    assignedComplaints: 'Assigned Complaints',
+    welcomeBack: 'Welcome back',
+    reportNewIssue: 'Report a New Civic Issue',
+    issueTitle: 'Issue Title',
+    issueDescription: 'Detailed Description',
+    category: 'Category',
+    selectCategory: 'Select Category',
+    location: 'Location Address',
+    detectLocation: 'Detect GPS Location',
+    pickOnMap: 'Pick Location on Map',
+    uploadPhoto: 'Upload Photo Evidence',
+    submitReport: 'Submit Complaint with AI Analysis',
+    voiceInput: 'Voice Input',
+    listening: 'Listening...',
+    aiAuthenticityScore: 'AI Authenticity Score',
+    genuineIssue: 'Genuine Civic Issue Verified',
+    flaggedFake: 'Flagged for Review (Potential Fake)',
+    resolutionProof: 'Resolution Proof (Before & After)',
+    beforePhoto: 'Original Issue Photo',
+    afterPhoto: 'Officer Resolution Photo',
+    aiResolutionVerification: 'AI Resolution Accuracy',
+    status: 'Status',
+    pending: 'Pending',
+    assigned: 'Assigned',
+    inProgress: 'In Progress',
+    resolved: 'Resolved',
+    rejected: 'Rejected',
+    upvote: 'Upvote Issue',
+    upvoted: 'Upvoted',
+    karmaPoints: 'Civic Karma Points',
+    notifications: 'Notifications',
+    markAllRead: 'Mark all as read',
+    noNotifications: 'No notifications yet',
+    langName: 'English',
+    speechLang: 'en-IN',
+  },
+  hi: {
+    appTitle: 'सिविकमाइंड एआई',
+    dashboard: 'डैशबोर्ड',
+    myComplaints: 'मेरी शिकायतें',
+    newComplaint: 'समस्या दर्ज करें',
+    analytics: 'विश्लेषण',
+    commandCenter: 'कमांड सेंटर',
+    officerPortal: 'अधिकारी पोर्टल',
+    assignedComplaints: 'आवंटित शिकायतें',
+    welcomeBack: 'पुनः स्वागत है',
+    reportNewIssue: 'नई नागरिक समस्या दर्ज करें',
+    issueTitle: 'समस्या का शीर्षक',
+    issueDescription: 'विस्तृत विवरण',
+    category: 'श्रेणी',
+    selectCategory: 'श्रेणी चुनें',
+    location: 'स्थान का पता',
+    detectLocation: 'जीपीएस स्थान पहचानें',
+    pickOnMap: 'मानचित्र पर स्थान चुनें',
+    uploadPhoto: 'फ़ोटो प्रमाण अपलोड करें',
+    submitReport: 'एआई विश्लेषण के साथ जमा करें',
+    voiceInput: 'वॉयस इनपुट (बोलकर लिखें)',
+    listening: 'सुन रहा है...',
+    aiAuthenticityScore: 'एआई प्रामाणिकता स्कोर',
+    genuineIssue: 'प्रामाणिक नागरिक समस्या सत्यापित',
+    flaggedFake: 'समीक्षा के लिए चिह्नित (संभावित फर्जी)',
+    resolutionProof: 'समाधान प्रमाण (पहले और बाद में)',
+    beforePhoto: 'मूल समस्या फ़ोटो',
+    afterPhoto: 'अधिकारी द्वारा समाधान फ़ोटो',
+    aiResolutionVerification: 'एआई समाधान सटीकता',
+    status: 'स्थिति',
+    pending: 'लंबित',
+    assigned: 'आवंटित',
+    inProgress: 'प्रगति पर',
+    resolved: 'हल किया गया',
+    rejected: 'अस्वीकृत',
+    upvote: 'समर्थन दें (अपवोट)',
+    upvoted: 'समर्थित',
+    karmaPoints: 'सिविक कर्म अंक',
+    notifications: 'सूचनाएं',
+    markAllRead: 'सभी को पढ़ा हुआ चिह्नित करें',
+    noNotifications: 'कोई नई सूचना नहीं है',
+    langName: 'हिंदी',
+    speechLang: 'hi-IN',
+  },
+  mr: {
+    appTitle: 'सिव्हिकमाइंड एआय',
+    dashboard: 'डॅशबोर्ड',
+    myComplaints: 'माझ्या तक्रारी',
+    newComplaint: 'तक्रार नोंदवा',
+    analytics: 'विश्लेषण',
+    commandCenter: 'कमांड सेंटर',
+    officerPortal: 'अधिकारी पोर्टल',
+    assignedComplaints: 'सोपवलेल्या तक्रारी',
+    welcomeBack: 'पुन्हा स्वागत आहे',
+    reportNewIssue: 'नवीन नागरी समस्या नोंदवा',
+    issueTitle: 'समस्येचे नाव',
+    issueDescription: 'सविस्तर माहिती',
+    category: 'प्रवर्ग',
+    selectCategory: 'प्रवर्ग निवडा',
+    location: 'ठिकाणाचा पत्ता',
+    detectLocation: 'जीपीएस स्थान शोधा',
+    pickOnMap: 'नकाशावर ठिकाण निवडा',
+    uploadPhoto: 'फोटो पुरावा अपलोड करा',
+    submitReport: 'एआय विश्लेषणासह तक्रार दाखल करा',
+    voiceInput: 'व्हॉइस इनपुट (बोलून लिहा)',
+    listening: 'ऐकत आहे...',
+    aiAuthenticityScore: 'एआय अस्सलता स्कोर',
+    genuineIssue: 'खरी नागरी समस्या पडताळली',
+    flaggedFake: 'तपासणीसाठी चिन्हांकित (संशयित बनावट)',
+    resolutionProof: 'निराकरण पुरावा (आधी आणि नंतर)',
+    beforePhoto: 'मूळ समस्येचा फोटो',
+    afterPhoto: 'अधिकाऱ्याचा निराकरण फोटो',
+    aiResolutionVerification: 'एआय निराकरण अचूकता',
+    status: 'स्थिती',
+    pending: 'प्रलंबित',
+    assigned: 'सोपवले',
+    inProgress: 'प्रगतीपथावर',
+    resolved: 'सोडवले',
+    rejected: 'नाकारले',
+    upvote: 'समर्थन द्या (अपव्होट)',
+    upvoted: 'समर्थित',
+    karmaPoints: 'सिव्हिक कर्म गुण',
+    notifications: 'सूचना',
+    markAllRead: 'सर्व वाचलेले म्हणून चिन्हांकित करा',
+    noNotifications: 'कोणतीही सूचना नाही',
+    langName: 'मराठी',
+    speechLang: 'mr-IN',
+  },
+};
+
+const LanguageContext = createContext();
+
+export const LanguageProvider = ({ children }) => {
+  const [lang, setLang] = useState(() => localStorage.getItem('civicmind_lang') || 'en');
+
+  useEffect(() => {
+    localStorage.setItem('civicmind_lang', lang);
+  }, [lang]);
+
+  const t = (key) => translations[lang]?.[key] || translations['en']?.[key] || key;
+
+  return (
+    <LanguageContext.Provider value={{ lang, setLang, t, speechLang: translations[lang]?.speechLang || 'en-IN' }}>
+      {children}
+    </LanguageContext.Provider>
+  );
+};
+
+export const useLanguage = () => {
+  const context = useContext(LanguageContext);
+  if (!context) throw new Error('useLanguage must be used within LanguageProvider');
+  return context;
+};

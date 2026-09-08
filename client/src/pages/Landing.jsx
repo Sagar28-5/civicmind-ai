@@ -239,7 +239,7 @@ export default function Landing() {
                 Start Now — It's Free <ArrowRight size={18} />
               </Link>
               <Link to="/login" className="btn-secondary flex items-center gap-2 justify-center">
-                Admin Login <Globe size={18} />
+                Sign In <Globe size={18} />
               </Link>
             </div>
           </motion.div>

@@ -103,23 +103,38 @@ export default function Register() {
 
             {step === 2 && (
               <motion.div key="step2" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }}>
-                <h2 className="text-xl font-bold mb-6">Choose Your Role</h2>
+                <h2 className="text-xl font-bold mb-2 text-white">Account Type</h2>
+                <p className="text-gray-400 text-xs mb-6">Public registration is enabled for Citizens only</p>
                 <div className="space-y-3 mb-6">
-                  {ROLES.map((r) => (
-                    <button key={r.id} onClick={() => setForm({...form, role: r.id})}
-                      className={`w-full p-4 rounded-2xl border-2 transition-all text-left flex items-center gap-4 ${form.role === r.id ? 'border-primary bg-primary/10' : 'border-white/10 hover:border-white/20'}`}>
-                      <span className="text-3xl">{r.icon}</span>
-                      <div>
-                        <div className="font-bold">{r.label}</div>
-                        <div className="text-gray-400 text-sm">{r.desc}</div>
-                      </div>
-                      {form.role === r.id && <CheckCircle size={20} className="text-primary ml-auto" />}
-                    </button>
-                  ))}
+                  {ROLES.map((r) => {
+                    const isDisabled = r.id !== 'citizen';
+                    return (
+                      <button
+                        key={r.id}
+                        type="button"
+                        onClick={() => !isDisabled && setForm({...form, role: r.id})}
+                        disabled={isDisabled}
+                        className={`w-full p-4 rounded-2xl border-2 transition-all text-left flex items-center gap-4 ${
+                          isDisabled
+                            ? 'border-white/5 opacity-50 cursor-not-allowed bg-white/5'
+                            : form.role === r.id
+                            ? 'border-primary bg-primary/10'
+                            : 'border-white/10 hover:border-white/20'
+                        }`}
+                      >
+                        <span className="text-3xl">{r.icon}</span>
+                        <div>
+                          <div className="font-bold text-white">{r.label} {isDisabled && <span className="text-[10px] bg-red-500/20 text-red-400 px-2 py-0.5 rounded-full ml-2">Restricted</span>}</div>
+                          <div className="text-gray-400 text-xs">{isDisabled ? 'Access granted by central administration only' : r.desc}</div>
+                        </div>
+                        {form.role === r.id && <CheckCircle size={20} className="text-primary ml-auto" />}
+                      </button>
+                    );
+                  })}
                 </div>
                 <div className="flex gap-3">
-                  <button onClick={() => setStep(1)} className="btn-secondary flex items-center gap-2"><ArrowLeft size={16} /> Back</button>
-                  <button onClick={() => setStep(3)} className="btn-primary flex-1 flex items-center justify-center gap-2">Continue <ArrowRight size={16} /></button>
+                  <button type="button" onClick={() => setStep(1)} className="btn-secondary flex items-center gap-2"><ArrowLeft size={16} /> Back</button>
+                  <button type="button" onClick={() => setStep(3)} className="btn-primary flex-1 flex items-center justify-center gap-2">Continue <ArrowRight size={16} /></button>
                 </div>
               </motion.div>
             )}

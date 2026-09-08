@@ -22,10 +22,14 @@ router.post('/register', authLimiter, [
 
   const { name, email, password, role, phone, location } = req.body;
   try {
+    if (role === 'admin' || role === 'officer') {
+      return res.status(403).json({ message: 'Administrator and Officer accounts cannot be created via public sign-up. Access is granted by central municipal administration.' });
+    }
+
     const exists = await User.findOne({ email });
     if (exists) return res.status(409).json({ message: 'Email already registered' });
 
-    const user = await User.create({ name, email, passwordHash: password, role, phone, location });
+    const user = await User.create({ name, email, passwordHash: password, role: 'citizen', phone, location });
     await AuditLog.create({ userEmail: email, action: 'REGISTER', resource: 'User', resourceId: user._id });
 
     res.status(201).json({ token: generateToken(user._id), user });
